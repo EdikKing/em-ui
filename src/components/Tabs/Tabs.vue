@@ -1,9 +1,16 @@
+/**
+ * 标签页组件
+ * 支持标签切换、禁用状态、自定义颜色、滚动等功能
+ */
 <template>
+  <!-- 标签页容器 -->
   <div class="mobile-tabs">
+    <!-- 标签导航栏 -->
     <div 
       ref="navRef"
       class="mobile-tabs__nav"
     >
+      <!-- 标签项 -->
       <div
         v-for="(tab, index) in tabs"
         :key="index"
@@ -16,11 +23,13 @@
       >
         <span class="mobile-tabs__tab-text">{{ tab.label }}</span>
       </div>
+      <!-- 底部滑动条 -->
       <div
         class="mobile-tabs__line"
         :style="lineStyle"
       ></div>
     </div>
+    <!-- 内容区域 -->
     <div class="mobile-tabs__content">
       <slot />
     </div>
@@ -30,36 +39,51 @@
 <script setup lang="ts">
 import { ref, provide, computed, onMounted, nextTick, watch } from 'vue'
 
+/**
+ * 标签页接口定义
+ */
 export interface Tab {
-  name: string | number
-  label: string
-  disabled?: boolean
+  name: string | number    // 标签页的唯一标识
+  label: string          // 标签页显示的文本
+  disabled?: boolean    // 是否禁用
 }
 
+/**
+ * 组件属性接口定义
+ */
 interface Props {
-  modelValue: string | number
-  color?: string
+  modelValue: string | number    // 当前激活的标签页
+  color?: string                // 主题色，用于底部滑动条
 }
 
+// 设置默认属性值
 const props = withDefaults(defineProps<Props>(), {
   color: '#1989fa'
 })
 
+// 定义事件
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: string | number): void
-  (e: 'change', tab: Tab): void
+  (e: 'update:modelValue', value: string | number): void    // 更新激活的标签页
+  (e: 'change', tab: Tab): void                            // 标签页切换事件
 }>()
 
-const tabs = ref<Tab[]>([])
-const activeTab = ref<HTMLElement>()
-const navRef = ref<HTMLElement>()
+// 组件状态
+const tabs = ref<Tab[]>([])                    // 标签页列表
+const activeTab = ref<HTMLElement>()          // 当前激活的标签页元素
+const navRef = ref<HTMLElement>()             // 导航栏容器引用
 
-// 注册 tab
+/**
+ * 注册标签页
+ * 子组件通过 provide/inject 调用此方法注册自己
+ */
 const registerTab = (tab: Tab) => {
   tabs.value.push(tab)
 }
 
-// 注销 tab
+/**
+ * 注销标签页
+ * 子组件卸载时调用此方法注销自己
+ */
 const unregisterTab = (tab: Tab) => {
   const index = tabs.value.findIndex(t => t.name === tab.name)
   if (index > -1) {
@@ -67,14 +91,19 @@ const unregisterTab = (tab: Tab) => {
   }
 }
 
-// 点击 tab
+/**
+ * 处理标签页点击事件
+ */
 const handleTabClick = (tab: Tab) => {
   if (tab.disabled) return
   emit('update:modelValue', tab.name)
   emit('change', tab)
 }
 
-// 计算下划线样式
+/**
+ * 计算底部滑动条样式
+ * 根据当前激活的标签页位置计算滑动条的位置和宽度
+ */
 const lineStyle = computed(() => {
   if (!activeTab.value) return {}
   const tabText = activeTab.value.querySelector('.mobile-tabs__tab-text') as HTMLElement
@@ -89,7 +118,10 @@ const lineStyle = computed(() => {
   }
 })
 
-// 滚动到激活的标签页
+/**
+ * 滚动到激活的标签页
+ * 当标签页超出可视区域时，自动滚动到可见位置
+ */
 const scrollToActiveTab = async () => {
   await nextTick()
   if (!activeTab.value || !navRef.value) return
@@ -118,7 +150,10 @@ const scrollToActiveTab = async () => {
   })
 }
 
-// 更新下划线位置
+/**
+ * 更新底部滑动条位置
+ * 当激活的标签页改变时，更新滑动条位置并滚动到可见区域
+ */
 const updateLine = async () => {
   await nextTick()
   const activeTabIndex = tabs.value.findIndex(tab => tab.name === props.modelValue)
@@ -134,6 +169,7 @@ const updateLine = async () => {
 // 监听激活项变化
 watch(() => props.modelValue, updateLine)
 
+// 组件挂载时初始化
 onMounted(updateLine)
 
 // 提供注册和注销方法给子组件
@@ -145,71 +181,80 @@ provide('tabs', {
 </script>
 
 <style lang="scss" scoped>
+/* 标签页容器样式 */
 .mobile-tabs {
   width: 100%;
   -webkit-tap-highlight-color: transparent;
+}
 
-  &__nav {
-    position: relative;
-    display: flex;
-    width: 100%;
-    height: 44px;
-    background-color: $white;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
-    border-bottom: 1px solid $border-color;
+/* 标签导航栏样式 */
+.mobile-tabs__nav {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 44px;
+  background-color: $white;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  border-bottom: 1px solid $border-color;
 
-    &::-webkit-scrollbar {
-      display: none;
-    }
+  /* 隐藏滚动条 */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* 标签项样式 */
+.mobile-tabs__tab {
+  position: relative;
+  flex: 1;
+  min-width: 88px;
+  padding: 0 $spacing-md;
+  font-size: $font-size-md;
+  line-height: 44px;
+  color: $text-color;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+
+  /* 激活状态 */
+  &--active {
+    color: $primary-color;
+    font-weight: 500;
   }
 
-  &__tab {
-    position: relative;
-    flex: 1;
-    min-width: 88px;
-    padding: 0 $spacing-md;
-    font-size: $font-size-md;
-    line-height: 44px;
-    color: $text-color;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s;
-    white-space: nowrap;
-    -webkit-tap-highlight-color: transparent;
-
-    &--active {
-      color: $primary-color;
-      font-weight: 500;
-    }
-
-    &--disabled {
-      color: $text-color-secondary;
-      cursor: not-allowed;
-    }
+  /* 禁用状态 */
+  &--disabled {
+    color: $text-color-secondary;
+    cursor: not-allowed;
   }
+}
 
-  &__tab-text {
-    display: inline-block;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
+/* 标签文本样式 */
+.mobile-tabs__tab-text {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
 
-  &__line {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    height: 2px;
-    background-color: $primary-color;
-    transition: all 0.3s;
-  }
+/* 底部滑动条样式 */
+.mobile-tabs__line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background-color: $primary-color;
+  transition: all 0.3s;
+}
 
-  &__content {
-    position: relative;
-    overflow: hidden;
-  }
+/* 内容区域样式 */
+.mobile-tabs__content {
+  position: relative;
+  overflow: hidden;
 }
 </style> 
