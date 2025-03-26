@@ -22,8 +22,43 @@
     </div>
 
     <div class="demo-section">
+      <h3>自定义滑块宽度</h3>
+      <mobile-tabs v-model="activeTab2" :line-width="40">
+        <mobile-tab-pane name="1" label="很长的标签1">
+          <div class="content">标签1的内容</div>
+        </mobile-tab-pane>
+        <mobile-tab-pane name="2" label="很长的标签2">
+          <div class="content">标签2的内容</div>
+        </mobile-tab-pane>
+        <mobile-tab-pane name="3" label="很长的标签3">
+          <div class="content">标签3的内容</div>
+        </mobile-tab-pane>
+      </mobile-tabs>
+    </div>
+
+    <div class="demo-section">
+      <h3>滑块位置</h3>
+      <div class="demo-controls">
+        <mobile-button @click="linePosition = 'left'">靠左</mobile-button>
+        <mobile-button @click="linePosition = 'center'">居中</mobile-button>
+        <mobile-button @click="linePosition = 'right'">靠右</mobile-button>
+      </div>
+      <mobile-tabs v-model="activeTab3" :line-position="linePosition" :line-width="30">
+        <mobile-tab-pane name="1" label="很长的标签1">
+          <div class="content">标签1的内容</div>
+        </mobile-tab-pane>
+        <mobile-tab-pane name="2" label="很长的标签2">
+          <div class="content">标签2的内容</div>
+        </mobile-tab-pane>
+        <mobile-tab-pane name="3" label="很长的标签3">
+          <div class="content">标签3的内容</div>
+        </mobile-tab-pane>
+      </mobile-tabs>
+    </div>
+
+    <div class="demo-section">
       <h3>禁用标签</h3>
-      <mobile-tabs v-model="activeTab2">
+      <mobile-tabs v-model="activeTab4">
         <mobile-tab-pane name="1" label="标签1">
           <div class="content">标签1的内容</div>
         </mobile-tab-pane>
@@ -38,7 +73,7 @@
 
     <div class="demo-section">
       <h3>滚动标签页</h3>
-      <mobile-tabs v-model="activeTab4">
+      <mobile-tabs v-model="activeTab5">
         <mobile-tab-pane
           v-for="i in 10"
           :key="i"
@@ -58,12 +93,16 @@ import { useRouter } from 'vue-router'
 import MobileNavBar from '../components/NavBar/NavBar.vue'
 import MobileTabs from '../components/Tabs/Tabs.vue'
 import MobileTabPane from '../components/Tabs/TabPane.vue'
+import MobileButton from '../components/Button/Button.vue'
 
 const router = useRouter()
 
 const activeTab1 = ref('1')
 const activeTab2 = ref('1')
+const activeTab3 = ref('1')
 const activeTab4 = ref('1')
+const activeTab5 = ref('1')
+const linePosition = ref<'left' | 'center' | 'right'>('center')
 </script>
 
 <style lang="scss" scoped>
@@ -84,6 +123,12 @@ const activeTab4 = ref('1')
       padding-left: 20px;
       padding-top: 10px;
     }
+  }
+
+  .demo-controls {
+    display: flex;
+    gap: $spacing-sm;
+    padding: $spacing-md;
   }
 
   .content {

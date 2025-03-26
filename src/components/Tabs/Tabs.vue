@@ -38,6 +38,7 @@
 
 <script setup lang="ts">
 import { ref, provide, computed, onMounted, nextTick, watch } from 'vue'
+import type { TabPaneProps } from './TabPane.vue'
 
 /**
  * 标签页接口定义
@@ -52,31 +53,34 @@ export interface Tab {
  * 组件属性接口定义
  */
 interface Props {
-  modelValue: string | number    // 当前激活的标签页
-  color?: string                // 主题色，用于底部滑动条
+  modelValue?: string | number
+  lineWidth?: number | string
+  linePosition?: 'left' | 'center' | 'right'
 }
 
 // 设置默认属性值
 const props = withDefaults(defineProps<Props>(), {
-  color: '#1989fa'
+  modelValue: '',
+  lineWidth: 'auto',
+  linePosition: 'center'
 })
 
 // 定义事件
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: string | number): void    // 更新激活的标签页
-  (e: 'change', tab: Tab): void                            // 标签页切换事件
+  (e: 'update:modelValue', value: string | number): void
+  (e: 'change', value: string | number): void
 }>()
 
 // 组件状态
-const tabs = ref<Tab[]>([])                    // 标签页列表
-const activeTab = ref<HTMLElement>()          // 当前激活的标签页元素
-const navRef = ref<HTMLElement>()             // 导航栏容器引用
+const tabs = ref<TabPaneProps[]>([])                    // 标签页列表
+const activeTab = ref<HTMLElement | null>(null)          // 当前激活的标签页元素
+const navRef = ref<HTMLElement | null>(null)             // 导航栏容器引用
 
 /**
  * 注册标签页
  * 子组件通过 provide/inject 调用此方法注册自己
  */
-const registerTab = (tab: Tab) => {
+const registerTab = (tab: TabPaneProps) => {
   tabs.value.push(tab)
 }
 
@@ -84,8 +88,8 @@ const registerTab = (tab: Tab) => {
  * 注销标签页
  * 子组件卸载时调用此方法注销自己
  */
-const unregisterTab = (tab: Tab) => {
-  const index = tabs.value.findIndex(t => t.name === tab.name)
+const unregisterTab = (name: string | number) => {
+  const index = tabs.value.findIndex(t => t.name === name)
   if (index > -1) {
     tabs.value.splice(index, 1)
   }
@@ -94,10 +98,10 @@ const unregisterTab = (tab: Tab) => {
 /**
  * 处理标签页点击事件
  */
-const handleTabClick = (tab: Tab) => {
+const handleTabClick = (tab: TabPaneProps) => {
   if (tab.disabled) return
   emit('update:modelValue', tab.name)
-  emit('change', tab)
+  emit('change', tab.name)
 }
 
 /**
@@ -106,15 +110,36 @@ const handleTabClick = (tab: Tab) => {
  */
 const lineStyle = computed(() => {
   if (!activeTab.value) return {}
+
   const tabText = activeTab.value.querySelector('.mobile-tabs__tab-text') as HTMLElement
   if (!tabText) return {}
-  
-  const { offsetLeft, offsetWidth } = tabText
-  const tabLeft = activeTab.value.offsetLeft
+
+  const tabElement = activeTab.value as HTMLElement
+  const textWidth = tabText.offsetWidth
+
+  // 计算滑块宽度
+  let width = textWidth
+  if (props.lineWidth !== 'auto') {
+    const customWidth = typeof props.lineWidth === 'number' ? props.lineWidth : parseInt(props.lineWidth)
+    // 如果自定义宽度大于文字宽度，则使用文字宽度
+    width = Math.min(customWidth, textWidth)
+  }
+
+  // 计算滑块位置
+  let transform = 0
+  if (props.linePosition === 'left') {
+    transform = tabElement.offsetLeft + tabText.offsetLeft
+  } else if (props.linePosition === 'center') {
+    // 居中时，需要考虑自定义宽度
+    transform = tabElement.offsetLeft + (tabElement.offsetWidth - width) / 2
+  } else if (props.linePosition === 'right') {
+    // 右对齐时，需要考虑自定义宽度
+    transform = tabElement.offsetLeft + tabElement.offsetWidth - width - tabText.offsetLeft
+  }
+
   return {
-    transform: `translateX(${tabLeft + offsetLeft}px)`,
-    width: `${offsetWidth}px`,
-    backgroundColor: props.color
+    transform: `translateX(${transform}px)`,
+    width: `${width}px`
   }
 })
 
@@ -170,7 +195,9 @@ const updateLine = async () => {
 watch(() => props.modelValue, updateLine)
 
 // 组件挂载时初始化
-onMounted(updateLine)
+onMounted(() => {
+  updateLine()
+})
 
 // 提供注册和注销方法给子组件
 provide('tabs', {
